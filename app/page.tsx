@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-export const revalidate = 300;
+const PAGE_SIZE = 8;
 
 function readTime(content: string) {
   const words = content.trim().split(/\s+/).length;
@@ -47,25 +47,37 @@ function BookmarkIcon() {
   );
 }
 
-export default async function HomePage() {
-  const posts = await prisma.post.findMany({
-    where: { status: "published" },
-    orderBy: { publishedAt: "desc" },
-    take: 20,
-  });
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: { count?: string };
+}) {
+  const count = Math.max(PAGE_SIZE, parseInt(searchParams?.count ?? "", 10) || PAGE_SIZE);
+
+  const [posts, total] = await Promise.all([
+    prisma.post.findMany({
+      where: { status: "published" },
+      orderBy: { publishedAt: "desc" },
+      take: count,
+    }),
+    prisma.post.count({ where: { status: "published" } }),
+  ]);
+
+  const hasMore = total > posts.length;
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 24px 64px" }}>
+    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 24px 64px" }}>
       {posts.length === 0 && (
         <p style={{ color: "#6b6b6b" }}>
           No posts published yet — run the generator, review a draft, and publish it.
         </p>
       )}
 
-      <div>
+      <div className="feed-list">
         {posts.map((post, i) => (
           <article
             key={post.id}
+            className="feed-card"
             style={{
               padding: "28px 0",
               borderBottom: i === posts.length - 1 ? "none" : "1px solid #ececec",
@@ -81,7 +93,18 @@ export default async function HomePage() {
               </span>
             </div>
 
-            <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+            <div className="feed-card-inner" style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+              {post.coverImage && (
+                <Link href={`/blog/${post.slug}`} className="feed-thumb-link" style={{ flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.coverImage}
+                    alt=""
+                    className="feed-thumb"
+                    style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
+                  />
+                </Link>
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Link href={`/blog/${post.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <h2
@@ -112,17 +135,6 @@ export default async function HomePage() {
                   {post.excerpt}
                 </p>
               </div>
-              {post.coverImage && (
-                <Link href={`/blog/${post.slug}`} style={{ flexShrink: 0 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={post.coverImage}
-                    alt=""
-                    className="feed-thumb"
-                    style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
-                  />
-                </Link>
-              )}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 16, color: "#6b6b6b" }}>
@@ -147,6 +159,26 @@ export default async function HomePage() {
           </article>
         ))}
       </div>
+
+      {hasMore && (
+        <div style={{ textAlign: "center", marginTop: 32 }}>
+          <Link
+            href={`/?count=${count + PAGE_SIZE}`}
+            style={{
+              display: "inline-block",
+              padding: "12px 28px",
+              borderRadius: 24,
+              border: "1px solid #242424",
+              color: "#242424",
+              textDecoration: "none",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            See more recommended stories
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

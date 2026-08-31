@@ -29,8 +29,9 @@ img {
   }
 }
 
-/* Homepage feed thumbnail — Medium-style square-ish image on the right of
-   each card. Sized responsively: smaller on phones, bigger on tablets/laptops. */
+/* Homepage feed thumbnail — Medium-style image next to (mobile) or above
+   (desktop grid) each card. Sized responsively: smaller on phones, bigger
+   on tablets, full-width-of-card on desktop grid. */
 .feed-thumb {
   width: 96px;
   height: 96px;
@@ -43,17 +44,43 @@ img {
   }
 }
 
-@media (min-width: 900px) {
-  .feed-thumb {
-    width: 140px;
-    height: 140px;
-  }
-}
-
 /* Sticky header, like Medium — stays visible while scrolling the feed. */
 header {
   position: sticky;
   top: 0;
   z-index: 10;
   background: #fff;
+}
+
+/* Desktop: switch the feed from a single stacked column (mobile) to a
+   multi-column card grid (like Medium's homepage grid), with the thumbnail
+   moved to the top of each card instead of beside the text. */
+@media (min-width: 900px) {
+  .feed-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .feed-list .feed-card {
+    padding: 0 !important;
+    border-bottom: none !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .feed-list .feed-card-inner {
+    flex-direction: column !important;
+  }
+
+  .feed-list .feed-thumb-link {
+    width: 100%;
+    order: -1;
+    margin-bottom: 16px;
+  }
+
+  .feed-list .feed-thumb {
+    width: 100% !important;
+    height: 180px !important;
+  }
 }
