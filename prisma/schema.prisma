@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Every AI-generated draft lands here as "draft" first.
+// You (or an editor) review + tweak before flipping to "published".
+// This human-in-the-loop step matters for AdSense approval —
+// pure unedited AI dumps get flagged by Google's quality reviewers.
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String   @db.Text
+  sourceUrl   String? // original news article, for transparency/attribution
+  sourceName  String?
+  coverImage  String?
+  tags        String[] @default([])
+  status      String   @default("draft") // draft | published
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+  updatedAt   DateTime @updatedAt
+}

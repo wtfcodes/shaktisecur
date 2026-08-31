@@ -1,0 +1,59 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smaller screens: tighten up spacing and font sizes a bit so nothing
+   feels oversized or forces horizontal scroll. */
+@media (max-width: 600px) {
+  main {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  h1 {
+    font-size: 1.6rem !important;
+  }
+
+  h2 {
+    font-size: 1.15rem !important;
+  }
+}
+
+/* Homepage feed thumbnail — Medium-style square-ish image on the right of
+   each card. Sized responsively: smaller on phones, bigger on tablets/laptops. */
+.feed-thumb {
+  width: 96px;
+  height: 96px;
+}
+
+@media (min-width: 480px) {
+  .feed-thumb {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+@media (min-width: 900px) {
+  .feed-thumb {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+/* Sticky header, like Medium — stays visible while scrolling the feed. */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+}
