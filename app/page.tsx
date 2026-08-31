@@ -164,6 +164,7 @@ export default async function HomePage({
         <div style={{ textAlign: "center", marginTop: 32 }}>
           <Link
             href={`/?count=${count + PAGE_SIZE}`}
+            scroll={false}
             style={{
               display: "inline-block",
               padding: "12px 28px",
