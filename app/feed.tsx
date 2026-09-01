@@ -59,6 +59,7 @@ function Thumb({ post }: { post: Post }) {
     </Link>
   );
 }
+function Avatar({ letter }: { letter: string }) {
   return (
     <div
       style={{
