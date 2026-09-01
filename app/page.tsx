@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import Feed from "./Feed";
+import Feed from "./feed";
 
 export const revalidate = 300;
 
