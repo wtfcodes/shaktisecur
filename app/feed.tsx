@@ -20,7 +20,45 @@ function readTime(content: string) {
   return Math.max(1, Math.round(words / 200));
 }
 
-function Avatar({ letter }: { letter: string }) {
+const PLACEHOLDER_COLORS = ["#0f766e", "#7c3aed", "#b45309", "#0369a1", "#be123c", "#4d7c0f"];
+
+function placeholderColor(seed: string) {
+  const sum = seed.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return PLACEHOLDER_COLORS[sum % PLACEHOLDER_COLORS.length];
+}
+
+function Thumb({ post }: { post: Post }) {
+  return (
+    <Link href={`/blog/${post.slug}`} className="feed-thumb-link" style={{ flexShrink: 0 }}>
+      {post.coverImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.coverImage}
+          alt=""
+          className="feed-thumb"
+          style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
+        />
+      ) : (
+        <div
+          className="feed-thumb"
+          style={{
+            borderRadius: 4,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: placeholderColor(post.title || post.id),
+            color: "#fff",
+            fontFamily: "var(--font-serif), Georgia, serif",
+            fontWeight: 700,
+            fontSize: 32,
+          }}
+        >
+          {(post.title || "S").trim().charAt(0).toUpperCase()}
+        </div>
+      )}
+    </Link>
+  );
+}
   return (
     <div
       style={{
@@ -77,17 +115,7 @@ function PostCard({ post, isLast }: { post: Post; isLast: boolean }) {
       </div>
 
       <div className="feed-card-inner" style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-        {post.coverImage && (
-          <Link href={`/blog/${post.slug}`} className="feed-thumb-link" style={{ flexShrink: 0 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.coverImage}
-              alt=""
-              className="feed-thumb"
-              style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
-            />
-          </Link>
-        )}
+        <Thumb post={post} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <Link href={`/blog/${post.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
             <h2
