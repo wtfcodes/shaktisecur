@@ -75,7 +75,7 @@ function Thumb({ post }: { post: Post }) {
           src={post.coverImage}
           alt=""
           className="feed-thumb"
-          style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
+          style={{ objectFit: "contain", borderRadius: 4, display: "block", background: "#f4f4f4" }}
         />
       ) : (
         <div

@@ -334,7 +334,14 @@ export default function AdminPage() {
           <img
             src={selected.coverImage}
             alt="Cover preview"
-            style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 4, marginBottom: 16 }}
+            style={{
+              width: "100%",
+              maxHeight: 220,
+              objectFit: "contain",
+              background: "#f4f4f4",
+              borderRadius: 4,
+              marginBottom: 16,
+            }}
             onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
           />
         )}

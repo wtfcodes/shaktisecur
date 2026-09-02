@@ -107,7 +107,15 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         <img
           src={post.coverImage}
           alt=""
-          style={{ width: "100%", borderRadius: 4, marginBottom: 40 }}
+          style={{
+            width: "100%",
+            maxHeight: 480,
+            objectFit: "contain",
+            background: "#f4f4f4",
+            borderRadius: 4,
+            marginBottom: 40,
+            display: "block",
+          }}
         />
       )}
 
