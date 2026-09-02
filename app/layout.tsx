@@ -19,6 +19,24 @@ export const metadata: Metadata = {
   },
   description:
     "Daily technology and cybersecurity news, analysis, and explainers — covering software, AI, and the security world.",
+  openGraph: {
+    type: "website",
+    siteName: "ShaktiSecur",
+    title: "ShaktiSecur — Technology & Cybersecurity News",
+    description:
+      "Daily technology and cybersecurity news, analysis, and explainers — covering software, AI, and the security world.",
+    url: "https://shaktisecur.in",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ShaktiSecur — Technology & Cybersecurity News",
+    description:
+      "Daily technology and cybersecurity news, analysis, and explainers — covering software, AI, and the security world.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

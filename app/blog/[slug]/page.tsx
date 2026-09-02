@@ -12,7 +12,28 @@ function readTime(content: string) {
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const post = await prisma.post.findUnique({ where: { slug: params.slug } });
   if (!post) return {};
-  return { title: post.title, description: post.excerpt };
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: {
+      canonical: `https://shaktisecur.in/blog/${post.slug}`,
+    },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.excerpt,
+      url: `https://shaktisecur.in/blog/${post.slug}`,
+      publishedTime: post.publishedAt?.toISOString(),
+      tags: post.tags,
+      images: post.coverImage ? [{ url: post.coverImage }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: post.coverImage ? [post.coverImage] : undefined,
+    },
+  };
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {

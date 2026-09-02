@@ -16,6 +16,13 @@ const FEEDS = [
   { name: "Wired", url: "https://www.wired.com/feed/rss" },
   { name: "Polygon (Gaming)", url: "https://www.polygon.com/rss/index.xml" },
   { name: "CoinDesk (Blockchain)", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
+  // Dedicated cybersecurity sources — this is the site's core focus, so it
+  // needs its own reliable feeds rather than relying on general tech
+  // outlets to occasionally mention security.
+  { name: "The Hacker News", url: "https://feeds.feedburner.com/TheHackersNews" },
+  { name: "BleepingComputer", url: "https://www.bleepingcomputer.com/feed/" },
+  { name: "Krebs on Security", url: "https://krebsonsecurity.com/feed/" },
+  { name: "Dark Reading", url: "https://www.darkreading.com/rss.xml" },
 ];
 
 export type NewsItem = {
@@ -26,63 +33,73 @@ export type NewsItem = {
   isoDate?: string;
 };
 
-// The exact topic taxonomy the site should stay focused on. Every candidate
-// story is scored against this list; only stories that genuinely match one
-// of these categories are used for generation.
+// The exact topic taxonomy the site should stay focused on (matches Medium's
+// own topic categories). Every candidate story is scored against this list;
+// only stories that genuinely match one of these categories are used.
 const TOPIC_CATEGORIES: { name: string; keywords: string[] }[] = [
   {
     name: "artificial intelligence",
     keywords: [
-      "ai", "artificial intelligence", "chatgpt", "machine learning", "llm",
-      "large language model", "deep learning", "nlp", "voice assistant",
-      "conversational ai", "openai", "anthropic", "gemini", "claude",
+      "ai", "artificial intelligence", "chatgpt", "conversational ai", "deep learning",
+      "large language model", "llm", "machine learning", "nlp", "voice assistant",
+      "openai", "anthropic", "gemini", "claude", "neural network",
     ],
   },
   {
     name: "blockchain",
-    keywords: ["blockchain", "crypto", "cryptocurrency", "bitcoin", "ethereum", "nft", "web3", "defi"],
+    keywords: [
+      "blockchain", "bitcoin", "cryptocurrency", "crypto", "decentralized finance",
+      "defi", "ethereum", "nft", "web3",
+    ],
   },
   {
     name: "data science",
-    keywords: ["data science", "analytics", "database", "data engineering", "data visualization", "sql"],
+    keywords: ["data science", "analytics", "data engineering", "data visualization", "database design", "database", "sql"],
   },
   {
     name: "gadgets",
-    keywords: ["gadget", "smartphone", "iot", "internet of things", "smart home", "wearable", "ipad", "ebook", "laptop", "earbuds"],
+    keywords: [
+      "gadget", "ebook", "internet of things", "iot", "ipad", "smart home",
+      "smartphone", "wearable", "laptop", "earbuds",
+    ],
   },
   {
     name: "makers",
-    keywords: ["3d printing", "arduino", "raspberry pi", "robotics", "diy"],
+    keywords: ["3d printing", "arduino", "diy", "raspberry pi", "robotics"],
   },
   {
     name: "security",
     keywords: [
-      "security", "cybersecurity", "privacy", "encryption", "infosec", "password",
-      "data breach", "hack", "vulnerability", "exploit", "ransomware", "malware", "phishing",
+      "cybersecurity", "security", "data security", "encryption", "infosec", "password",
+      "data breach", "hack", "vulnerability", "exploit", "ransomware", "malware", "phishing", "privacy",
     ],
   },
   {
     name: "tech companies",
-    keywords: ["apple", "google", "amazon", "microsoft", "meta", "mastodon", "samsung", "nvidia", "tesla"],
+    keywords: ["amazon", "apple", "google", "mastodon", "medium", "microsoft", "meta", "samsung", "nvidia", "tesla"],
   },
   {
     name: "design",
-    keywords: ["design", "ux", "ui", "accessibility", "design system"],
+    keywords: ["accessibility", "design system", "design thinking", "graphic design", "icon design", "ux", "ui"],
   },
   {
     name: "product management",
-    keywords: ["product management", "agile", "kanban", "mvp", "lean startup", "roadmap"],
+    keywords: ["agile", "innovation", "kanban", "lean startup", "mvp", "product management", "roadmap"],
   },
   {
     name: "programming",
     keywords: [
-      "programming", "coding", "developer", "javascript", "python", "java",
-      "frontend", "backend", "ios development", "android development", "flutter", "react",
+      "android development", "coding", "flutter", "frontend engineering", "ios development",
+      "programming", "developer", "software development",
     ],
   },
   {
+    name: "programming languages",
+    keywords: ["angular", "css", "html", "java", "javascript", "python", "react", "typescript"],
+  },
+  {
     name: "devops",
-    keywords: ["devops", "cloud", "aws", "docker", "kubernetes", "terraform", "databricks"],
+    keywords: ["aws", "databricks", "docker", "kubernetes", "terraform", "devops", "cloud"],
   },
   {
     name: "operating systems",
@@ -91,8 +108,9 @@ const TOPIC_CATEGORIES: { name: string; keywords: string[] }[] = [
   {
     name: "gaming",
     keywords: [
-      "game", "gaming", "videogame", "nintendo", "playstation", "xbox",
-      "esports", "metaverse", "virtual reality", " vr ", "steam",
+      "game design", "game development", "indie game", "metaverse", "nintendo",
+      "playstation", "videogame", "video game", "virtual reality", "vr ", "xbox",
+      "gaming", "esports", "steam",
     ],
   },
 ];
@@ -238,11 +256,24 @@ export async function fetchNewsCandidates(poolTarget = 20): Promise<NewsItem[]> 
   }
 
   const categories = Array.from(byCategory.keys());
+
+  // Security is this site's core focus (ShaktiSecur) — always pull its
+  // top 2 best-matching stories in first, ahead of the general round-robin,
+  // so a batch never ends up with zero cybersecurity coverage. Kept small
+  // (not the whole pool) so the rest of the batch still spans other topics.
   const diversified: NewsItem[] = [];
+  const securityList = byCategory.get("security");
+  if (securityList) {
+    for (const entry of securityList.slice(0, 2)) {
+      diversified.push(entry.item);
+    }
+  }
+
   let round = 0;
   while (diversified.length < poolTarget) {
     let addedThisRound = false;
     for (const cat of categories) {
+      if (cat === "security") continue; // already front-loaded above
       const list = byCategory.get(cat)!;
       if (list[round]) {
         diversified.push(list[round].item);
