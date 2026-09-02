@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
-import { fetchLatestTechNews } from "@/lib/news";
+import { fetchNewsCandidates } from "@/lib/news";
 import { generateArticleFromNews } from "@/lib/ai";
+
+const TARGET_COUNT = 3;
 
 // Vercel Cron hits this route on the schedule set in vercel.json.
 // Protect it with a shared secret so randoms can't trigger it / burn your API credits.
@@ -12,25 +14,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let news;
+  let candidates;
   try {
-    news = await fetchLatestTechNews(3); // 3 drafts per run — tune as you like
+    candidates = await fetchNewsCandidates(20);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("News fetch failed:", message);
     return NextResponse.json({ ok: false, createdDrafts: [], error: message });
   }
-  const created = [];
+
+  const created: string[] = [];
   const errors: string[] = [];
 
-  for (const item of news) {
+  // Keep trying candidates (in relevance order) until we hit the target
+  // count or run out of candidates — guarantees 3 drafts most runs instead
+  // of silently producing fewer whenever one candidate is a duplicate or a
+  // single model call fails.
+  for (const item of candidates) {
+    if (created.length >= TARGET_COUNT) break;
+
     try {
-      // Skip if we've already made a post from this exact source link
       const existing = await prisma.post.findFirst({ where: { sourceUrl: item.link } });
       if (existing) continue;
 
       const generated = await generateArticleFromNews(item);
-      const slug = slugify(generated.title, { lower: true, strict: true });
+      let slug = slugify(generated.title, { lower: true, strict: true });
+      const slugTaken = await prisma.post.findUnique({ where: { slug } });
+      if (slugTaken) slug = `${slug}-${Date.now().toString(36)}`;
 
       const post = await prisma.post.create({
         data: {
@@ -52,5 +62,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, createdDrafts: created, errors });
+  return NextResponse.json({ ok: true, createdDrafts: created, errors, candidatesTried: candidates.length });
 }

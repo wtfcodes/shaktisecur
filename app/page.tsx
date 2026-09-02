@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import Feed from "./feed";
+import Feed from "./Feed";
 
 export const revalidate = 300;
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 9; // multiple of 3 so the desktop grid never has a half-empty row
 
 export default async function HomePage() {
   const [posts, total] = await Promise.all([

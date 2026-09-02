@@ -15,9 +15,48 @@ type Post = {
   publishedAt: string | null;
 };
 
+const PAGE_SIZE = 9; // multiple of 3 so the desktop grid never has a half-empty row
+
 function readTime(content: string) {
   const words = content.trim().split(/\s+/).length;
   return Math.max(1, Math.round(words / 200));
+}
+
+function Avatar({ letter }: { letter: string }) {
+  return (
+    <div
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: "50%",
+        background: "#242424",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 12,
+        fontWeight: 600,
+        flexShrink: 0,
+      }}
+    >
+      {letter}
+    </div>
+  );
+}
+
+function ClapIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M8.5 9.5l-2-3a1.2 1.2 0 0 0-2 1.3l2.7 4.6M11 8l-2.3-4a1.2 1.2 0 0 0-2 1.2L9 9.8M13.5 7.7l-1.8-3.4a1.2 1.2 0 0 0-2.1 1.1l2 4M16 8.2l-1.2-2.4a1.1 1.1 0 0 0-2 1l2.3 5.3s1.8 4-1 7c-2.5 2.6-6.7 2-9-.6-1.5-1.7-3-4-3-4" />
+    </svg>
+  );
+}
+function BookmarkIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+    </svg>
+  );
 }
 
 const PLACEHOLDER_COLORS = ["#0f766e", "#7c3aed", "#b45309", "#0369a1", "#be123c", "#4d7c0f"];
@@ -57,42 +96,6 @@ function Thumb({ post }: { post: Post }) {
         </div>
       )}
     </Link>
-  );
-}
-function Avatar({ letter }: { letter: string }) {
-  return (
-    <div
-      style={{
-        width: 24,
-        height: 24,
-        borderRadius: "50%",
-        background: "#242424",
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 12,
-        fontWeight: 600,
-        flexShrink: 0,
-      }}
-    >
-      {letter}
-    </div>
-  );
-}
-
-function ClapIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M8.5 9.5l-2-3a1.2 1.2 0 0 0-2 1.3l2.7 4.6M11 8l-2.3-4a1.2 1.2 0 0 0-2 1.2L9 9.8M13.5 7.7l-1.8-3.4a1.2 1.2 0 0 0-2.1 1.1l2 4M16 8.2l-1.2-2.4a1.1 1.1 0 0 0-2 1l2.3 5.3s1.8 4-1 7c-2.5 2.6-6.7 2-9-.6-1.5-1.7-3-4-3-4" />
-    </svg>
-  );
-}
-function BookmarkIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-    </svg>
   );
 }
 
@@ -182,7 +185,7 @@ export default function Feed({ initialPosts, initialTotal }: { initialPosts: Pos
   async function loadMore() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/public/posts?skip=${posts.length}&take=8`);
+      const res = await fetch(`/api/public/posts?skip=${posts.length}&take=${PAGE_SIZE}`);
       const data = await res.json();
       setPosts((prev) => [...prev, ...data.posts]);
       setTotal(data.total);

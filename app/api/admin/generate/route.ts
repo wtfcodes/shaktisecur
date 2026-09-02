@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
-import { fetchLatestTechNews } from "@/lib/news";
+import { fetchNewsCandidates } from "@/lib/news";
 import { generateArticleFromNews } from "@/lib/ai";
+
+const TARGET_COUNT = 3;
 
 // Same generation logic as the cron route, but protected by ADMIN_SECRET
 // (the one you already use to unlock /admin) instead of CRON_SECRET.
@@ -13,9 +15,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let news;
+  let candidates;
   try {
-    news = await fetchLatestTechNews(3);
+    candidates = await fetchNewsCandidates(20);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ ok: false, createdDrafts: [], errors: [`News fetch failed: ${message}`] }, { status: 200 });
@@ -24,13 +26,21 @@ export async function POST(req: NextRequest) {
   const created: string[] = [];
   const errors: string[] = [];
 
-  for (const item of news) {
+  // Keep trying candidates (in relevance order) until we hit the target
+  // count or run out — this is what guarantees 3 drafts most runs, instead
+  // of silently producing fewer whenever one candidate is a duplicate or
+  // the model call fails.
+  for (const item of candidates) {
+    if (created.length >= TARGET_COUNT) break;
+
     try {
       const existing = await prisma.post.findFirst({ where: { sourceUrl: item.link } });
       if (existing) continue;
 
       const generated = await generateArticleFromNews(item);
-      const slug = slugify(generated.title, { lower: true, strict: true });
+      let slug = slugify(generated.title, { lower: true, strict: true });
+      const slugTaken = await prisma.post.findUnique({ where: { slug } });
+      if (slugTaken) slug = `${slug}-${Date.now().toString(36)}`;
 
       const post = await prisma.post.create({
         data: {
@@ -52,5 +62,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, createdDrafts: created, errors });
+  return NextResponse.json({ ok: true, createdDrafts: created, errors, candidatesTried: candidates.length });
 }
