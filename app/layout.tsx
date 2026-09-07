@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Source_Serif_4, Inter } from "next/font/google";
+import NavLinks from "./NavLinks";
 import "./globals.css";
 
 const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif", weight: ["400", "600", "700"] });
@@ -65,25 +66,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 textDecoration: "none",
                 letterSpacing: "-0.5px",
                 display: "inline-flex",
+                gap: 6,
               }}
             >
               <span style={{ color: "#242424" }}>Shakti</span>
               <span style={{ color: "#0f766e" }}>Secur</span>
             </Link>
-            <div style={{ marginLeft: "auto", display: "flex", gap: 18, fontSize: 14, color: "#6b6b6b", flexWrap: "wrap" }}>
-              <Link href="/about" style={{ color: "inherit", textDecoration: "none" }}>
-                About
-              </Link>
-              <Link href="/contact" style={{ color: "inherit", textDecoration: "none" }}>
-                Contact
-              </Link>
-              <Link href="/privacy" style={{ color: "inherit", textDecoration: "none" }}>
-                Privacy
-              </Link>
-              <Link href="/disclaimer" style={{ color: "inherit", textDecoration: "none" }}>
-                Disclaimer
-              </Link>
-            </div>
+            <NavLinks />
           </nav>
         </header>
         <main>{children}</main>
