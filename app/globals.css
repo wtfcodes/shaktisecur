@@ -160,8 +160,14 @@ header {
 /* Wide desktop screens: turn the article page into a full-width 3-column
    layout with suggested-story sidebars on either side, filling all the way
    to the screen edges (no leftover blank margin) instead of a narrow fixed
-   sidebar with empty space beyond it. The sidebars are sticky so only the
-   article itself scrolls, while suggestions stay in place. */
+   sidebar with empty space beyond it.
+
+   Important: the sticky sidebars themselves stay their natural (short)
+   content height — do NOT stretch them to the row height, or "sticky"
+   breaks (a stretched element has nothing left to scroll past, so it just
+   scrolls normally instead of staying pinned). The full-height grey fill
+   is done separately, as a background on the grid container itself (which
+   naturally spans the article's full height), not on the sticky children. */
 @media (min-width: 1240px) {
   .article-layout {
     display: grid;
@@ -169,6 +175,15 @@ header {
     gap: 0;
     width: 100%;
     align-items: start;
+    background: linear-gradient(
+      to right,
+      #fafaf9 0,
+      #fafaf9 calc((100% - 700px) / 2),
+      #fff calc((100% - 700px) / 2),
+      #fff calc(100% - (100% - 700px) / 2),
+      #fafaf9 calc(100% - (100% - 700px) / 2),
+      #fafaf9 100%
+    );
   }
 
   .article-sidebar {
@@ -176,10 +191,7 @@ header {
     justify-content: center;
     position: sticky;
     top: 88px;
-    background: #fafaf9;
-    align-self: stretch;
     padding: 40px 28px;
-    min-height: calc(100vh - 88px);
   }
 
   .article-sidebar:first-child {
