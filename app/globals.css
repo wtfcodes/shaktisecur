@@ -128,6 +128,10 @@ header {
   display: none;
 }
 
+.article-sidebar-inner {
+  max-width: 320px;
+}
+
 .suggestion-card {
   display: block;
   text-decoration: none;
@@ -139,7 +143,7 @@ header {
   width: 100%;
   height: 110px;
   object-fit: contain;
-  background: #f4f4f4;
+  background: #eef1f0;
   border-radius: 4px;
   display: block;
   margin-bottom: 10px;
@@ -153,26 +157,46 @@ header {
   margin: 0;
 }
 
-/* Wide desktop screens: turn the article page into a 3-column layout with
-   suggested-story sidebars on either side. The sidebars are sticky so only
-   the article itself scrolls, while suggestions stay in place. */
+/* Wide desktop screens: turn the article page into a full-width 3-column
+   layout with suggested-story sidebars on either side, filling all the way
+   to the screen edges (no leftover blank margin) instead of a narrow fixed
+   sidebar with empty space beyond it. The sidebars are sticky so only the
+   article itself scrolls, while suggestions stay in place. */
 @media (min-width: 1240px) {
   .article-layout {
     display: grid;
-    grid-template-columns: 240px minmax(0, 680px) 240px;
-    gap: 40px;
-    max-width: 1240px;
-    margin: 0 auto;
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 700px) minmax(220px, 1fr);
+    gap: 0;
+    width: 100%;
     align-items: start;
-    padding: 0 24px;
   }
 
   .article-sidebar {
-    display: block;
+    display: flex;
+    justify-content: center;
     position: sticky;
     top: 88px;
+    background: #fafaf9;
+    align-self: stretch;
+    padding: 40px 28px;
+    min-height: calc(100vh - 88px);
+  }
+
+  .article-sidebar:first-child {
+    justify-content: flex-end;
+  }
+
+  .article-sidebar:last-child {
+    justify-content: flex-start;
   }
 }
+
+@media (min-width: 1600px) {
+  .article-sidebar-inner {
+    max-width: 340px;
+  }
+}
+
 
 /* Mobile: a compact "more stories" section at the end of the article. */
 .mobile-suggestions {

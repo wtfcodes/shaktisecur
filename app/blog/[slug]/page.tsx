@@ -95,26 +95,28 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const otherPosts = await prisma.post.findMany({
     where: { status: "published", slug: { not: post.slug } },
     orderBy: { publishedAt: "desc" },
-    take: 20,
+    take: 24,
     select: { title: true, slug: true, coverImage: true, tags: true },
   });
   const shuffled = shuffle(otherPosts);
-  const leftSuggestions = shuffled.slice(0, 2);
-  const rightSuggestions = shuffled.slice(2, 4);
+  const leftSuggestions = shuffled.slice(0, 3);
+  const rightSuggestions = shuffled.slice(3, 6);
 
   return (
     <div className="article-layout">
       <aside className="article-sidebar">
-        {leftSuggestions.length > 0 && (
-          <>
-            <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "#6b6b6b", marginBottom: 16 }}>
-              More stories
-            </p>
-            {leftSuggestions.map((p) => (
-              <SuggestionCard key={p.slug} post={p} />
-            ))}
-          </>
-        )}
+        <div className="article-sidebar-inner">
+          {leftSuggestions.length > 0 && (
+            <>
+              <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "#6b6b6b", marginBottom: 16 }}>
+                More stories
+              </p>
+              {leftSuggestions.map((p) => (
+                <SuggestionCard key={p.slug} post={p} />
+              ))}
+            </>
+          )}
+        </div>
       </aside>
 
       <article style={{ maxWidth: 680, margin: "0 auto", padding: "56px 24px" }}>
@@ -263,16 +265,18 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       </article>
 
       <aside className="article-sidebar">
-        {rightSuggestions.length > 0 && (
-          <>
-            <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "#6b6b6b", marginBottom: 16 }}>
-              More stories
-            </p>
-            {rightSuggestions.map((p) => (
-              <SuggestionCard key={p.slug} post={p} />
-            ))}
-          </>
-        )}
+        <div className="article-sidebar-inner">
+          {rightSuggestions.length > 0 && (
+            <>
+              <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "#6b6b6b", marginBottom: 16 }}>
+                More stories
+              </p>
+              {rightSuggestions.map((p) => (
+                <SuggestionCard key={p.slug} post={p} />
+              ))}
+            </>
+          )}
+        </div>
       </aside>
     </div>
   );
