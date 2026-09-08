@@ -43,6 +43,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4227084691988266"
+          crossOrigin="anonymous"
+        ></script>
+      </head>
       <body style={{ margin: 0, fontFamily: "var(--font-sans), system-ui, sans-serif", color: "#242424", background: "#fff" }}>
         <header style={{ borderBottom: "1px solid #e6e6e6" }}>
           <nav
