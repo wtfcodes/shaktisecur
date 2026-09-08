@@ -40,7 +40,7 @@ Respond ONLY with valid JSON, no markdown fences, in this exact shape:
 // whatever the current API version supports.
 // gemini-2.0-flash has a much more generous free tier (~1500 requests/day)
 // than the newer preview models, which sometimes ship with a tiny free quota.
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-3.6-flash";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 // Thrown specifically for HTTP 429 / RESOURCE_EXHAUSTED so callers can stop
