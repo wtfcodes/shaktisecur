@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { Source_Serif_4, Inter } from "next/font/google";
 import NavLinks from "./NavLinks";
 import "./globals.css";
@@ -51,6 +52,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ></script>
       </head>
       <body style={{ margin: 0, fontFamily: "var(--font-sans), system-ui, sans-serif", color: "#242424", background: "#fff" }}>
+        {/* Google Analytics (GA4) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-DH3MGCG43M"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-DH3MGCG43M');
+          `}
+        </Script>
         <header style={{ borderBottom: "1px solid #e6e6e6" }}>
           <nav
             style={{
