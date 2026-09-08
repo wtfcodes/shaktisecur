@@ -22,7 +22,7 @@ Never copy sentences verbatim from the summary provided. Always write your own a
 
 The FIRST tag must be the single best-fitting category from this exact list (pick the one
 closest match, even if imperfect):
-artificial intelligence, blockchain, data science, gadgets, security, tech companies,
+artificial intelligence, data science, gadgets, security, tech companies,
 programming, devops, gaming
 Then add 2-4 more specific lowercase tags after it (e.g. the product/company name, a more
 precise topic).
@@ -38,8 +38,15 @@ Respond ONLY with valid JSON, no markdown fences, in this exact shape:
 // Calling the Gemini REST API directly (instead of the @google/generative-ai
 // SDK) avoids SDK-version/model-name mismatches — this always talks to
 // whatever the current API version supports.
-const MODEL = "gemini-3.6-flash";
+// gemini-2.0-flash has a much more generous free tier (~1500 requests/day)
+// than the newer preview models, which sometimes ship with a tiny free quota.
+const MODEL = "gemini-2.0-flash";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+
+// Thrown specifically for HTTP 429 / RESOURCE_EXHAUSTED so callers can stop
+// retrying immediately instead of burning through every remaining candidate
+// (they'll all fail the same way until the quota window resets).
+export class QuotaExceededError extends Error {}
 
 export async function generateArticleFromNews(item: NewsItem): Promise<GeneratedPost> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -76,6 +83,9 @@ Write the original, long-form article now (1200-1800 words).`;
 
   if (!res.ok) {
     const errBody = await res.text();
+    if (res.status === 429 || errBody.includes("RESOURCE_EXHAUSTED")) {
+      throw new QuotaExceededError(`Gemini quota exceeded (429): ${errBody.slice(0, 300)}`);
+    }
     throw new Error(`Gemini API error (${res.status}): ${errBody.slice(0, 500)}`);
   }
 

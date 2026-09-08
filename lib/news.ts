@@ -15,7 +15,6 @@ const FEEDS = [
   { name: "Ars Technica", url: "https://feeds.arstechnica.com/arstechnica/technology-lab" },
   { name: "Wired", url: "https://www.wired.com/feed/rss" },
   { name: "Polygon (Gaming)", url: "https://www.polygon.com/rss/index.xml" },
-  { name: "CoinDesk (Blockchain)", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
   // Dedicated cybersecurity sources — this is the site's core focus, so it
   // needs its own reliable feeds rather than relying on general tech
   // outlets to occasionally mention security.
@@ -46,13 +45,6 @@ const TOPIC_CATEGORIES: { name: string; keywords: string[] }[] = [
     ],
   },
   {
-    name: "blockchain",
-    keywords: [
-      "blockchain", "bitcoin", "cryptocurrency", "crypto", "decentralized finance",
-      "defi", "ethereum", "nft", "web3",
-    ],
-  },
-  {
     name: "data science",
     keywords: ["data science", "analytics", "data engineering", "data visualization", "database design", "database", "sql"],
   },
@@ -77,14 +69,6 @@ const TOPIC_CATEGORIES: { name: string; keywords: string[] }[] = [
   {
     name: "tech companies",
     keywords: ["amazon", "apple", "google", "mastodon", "medium", "microsoft", "meta", "samsung", "nvidia", "tesla"],
-  },
-  {
-    name: "design",
-    keywords: ["accessibility", "design system", "design thinking", "graphic design", "icon design", "ux", "ui"],
-  },
-  {
-    name: "product management",
-    keywords: ["agile", "innovation", "kanban", "lean startup", "mvp", "product management", "roadmap"],
   },
   {
     name: "programming",
@@ -257,14 +241,20 @@ export async function fetchNewsCandidates(poolTarget = 20): Promise<NewsItem[]> 
 
   const categories = Array.from(byCategory.keys());
 
-  // Security is this site's core focus (ShaktiSecur) — always pull its
-  // top 2 best-matching stories in first, ahead of the general round-robin,
-  // so a batch never ends up with zero cybersecurity coverage. Kept small
-  // (not the whole pool) so the rest of the batch still spans other topics.
+  // Security and Programming get priority — pull their best-matching
+  // stories in first, ahead of the general round-robin, so a batch is
+  // weighted toward these two topics most often instead of just an equal
+  // share with every other category.
   const diversified: NewsItem[] = [];
   const securityList = byCategory.get("security");
   if (securityList) {
-    for (const entry of securityList.slice(0, 2)) {
+    for (const entry of securityList.slice(0, 3)) {
+      diversified.push(entry.item);
+    }
+  }
+  const programmingList = byCategory.get("programming");
+  if (programmingList) {
+    for (const entry of programmingList.slice(0, 3)) {
       diversified.push(entry.item);
     }
   }
@@ -273,7 +263,7 @@ export async function fetchNewsCandidates(poolTarget = 20): Promise<NewsItem[]> 
   while (diversified.length < poolTarget) {
     let addedThisRound = false;
     for (const cat of categories) {
-      if (cat === "security") continue; // already front-loaded above
+      if (cat === "security" || cat === "programming") continue; // already front-loaded above
       const list = byCategory.get(cat)!;
       if (list[round]) {
         diversified.push(list[round].item);
