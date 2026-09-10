@@ -77,12 +77,12 @@ Write the original, long-form article now (1200-1800 words).`;
       generationConfig: {
         responseMimeType: "application/json",
         maxOutputTokens: 16384,
-        // gemini-3.6-flash does internal "thinking" by default, which eats
-        // into the same token budget as the actual output — that was
-        // silently truncating long articles mid-JSON. Turning it off frees
-        // the whole budget for the article itself.
+        // gemini-3.x models use "thinkingLevel" (not the older "thinkingBudget"
+        // field from Gemini 2.5) — sending the wrong field name causes a 400
+        // INVALID_ARGUMENT. "minimal" keeps as much of the token budget as
+        // possible for the actual article instead of internal reasoning.
         thinkingConfig: {
-          thinkingBudget: 0,
+          thinkingLevel: "minimal",
         },
       },
     }),
