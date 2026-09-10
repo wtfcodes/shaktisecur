@@ -76,7 +76,14 @@ Write the original, long-form article now (1200-1800 words).`;
       ],
       generationConfig: {
         responseMimeType: "application/json",
-        maxOutputTokens: 8192,
+        maxOutputTokens: 16384,
+        // gemini-3.6-flash does internal "thinking" by default, which eats
+        // into the same token budget as the actual output — that was
+        // silently truncating long articles mid-JSON. Turning it off frees
+        // the whole budget for the article itself.
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
       },
     }),
   });
