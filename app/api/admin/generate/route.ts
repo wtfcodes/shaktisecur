@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
 import { fetchNewsCandidates } from "@/lib/news";
-import { generateArticleFromNews } from "@/lib/ai";
+import { generateArticleFromNews, QuotaExceededError } from "@/lib/ai";
 
 const TARGET_COUNT = 3;
 
@@ -56,6 +56,13 @@ export async function POST(req: NextRequest) {
       });
       created.push(post.slug);
     } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        // Every remaining candidate will fail the same way until the daily
+        // quota resets — stop immediately instead of burning through the
+        // whole candidate list with repeated 429s.
+        errors.push(`Gemini daily free quota exceeded — stop and try again later (resets ~daily). ${err.message}`);
+        break;
+      }
       console.error("Failed to generate post for", item.title, err);
       const message = err instanceof Error ? err.message : String(err);
       errors.push(`${item.title}: ${message}`);
