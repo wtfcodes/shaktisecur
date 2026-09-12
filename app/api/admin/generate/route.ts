@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
 import { fetchNewsCandidates } from "@/lib/news";
-import { generateArticleFromNews, QuotaExceededError } from "@/lib/ai";
+import { generateArticleFromNews, QuotaExceededError, MODEL_NAME } from "@/lib/ai";
 
 const TARGET_COUNT = 3;
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       const existing = await prisma.post.findFirst({ where: { sourceUrl: item.link } });
       if (existing) continue;
 
-      const generated = await generateArticleFromNews(item);
+      const { post: generated, usage } = await generateArticleFromNews(item);
       let slug = slugify(generated.title, { lower: true, strict: true });
       const slugTaken = await prisma.post.findUnique({ where: { slug } });
       if (slugTaken) slug = `${slug}-${Date.now().toString(36)}`;
@@ -54,17 +54,32 @@ export async function POST(req: NextRequest) {
           status: "draft",
         },
       });
+      await prisma.apiUsage.create({
+        data: {
+          model: MODEL_NAME,
+          success: true,
+          promptTokens: usage.promptTokens,
+          candidatesTokens: usage.candidatesTokens,
+          totalTokens: usage.totalTokens,
+        },
+      });
       created.push(post.slug);
     } catch (err) {
       if (err instanceof QuotaExceededError) {
         // Every remaining candidate will fail the same way until the daily
         // quota resets — stop immediately instead of burning through the
         // whole candidate list with repeated 429s.
+        await prisma.apiUsage.create({
+          data: { model: MODEL_NAME, success: false, errorType: "quota_exceeded" },
+        });
         errors.push(`Gemini daily free quota exceeded — stop and try again later (resets ~daily). ${err.message}`);
         break;
       }
       console.error("Failed to generate post for", item.title, err);
       const message = err instanceof Error ? err.message : String(err);
+      await prisma.apiUsage.create({
+        data: { model: MODEL_NAME, success: false, errorType: message.slice(0, 200) },
+      });
       errors.push(`${item.title}: ${message}`);
     }
   }

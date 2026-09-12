@@ -17,6 +17,16 @@ type Post = {
   publishedAt: string | null;
 };
 
+type Usage = {
+  requestsToday: number;
+  successToday: number;
+  failedToday: number;
+  totalTokensToday: number;
+  promptTokensToday: number;
+  candidatesTokensToday: number;
+  recent: { createdAt: string; success: boolean; totalTokens: number; errorType: string | null }[];
+};
+
 const BLANK_POST: Post = {
   id: "",
   title: "",
@@ -32,10 +42,14 @@ const BLANK_POST: Post = {
   publishedAt: null,
 };
 
+const PAGE_SIZE = 20;
+const FREE_DAILY_REQUEST_LIMIT = 20;
+
 export default function AdminPage() {
   const [secret, setSecret] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Post | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
@@ -46,6 +60,9 @@ export default function AdminPage() {
   const [generateMsg, setGenerateMsg] = useState("");
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingInline, setUploadingInline] = useState(false);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [showUsage, setShowUsage] = useState(false);
 
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const coverFileRef = useRef<HTMLInputElement>(null);
@@ -74,12 +91,30 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("Wrong key or server error");
       const data = await res.json();
       setPosts(data);
+      setPage(0);
     } catch (e) {
       setError("Could not load posts. Check your admin key.");
       setUnlocked(false);
       localStorage.removeItem("admin_secret");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadUsage() {
+    setUsageLoading(true);
+    try {
+      const res = await fetch("/api/admin/usage", {
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      if (!res.ok) throw new Error("Could not load usage");
+      const data = await res.json();
+      setUsage(data);
+      setShowUsage(true);
+    } catch (e) {
+      setError("Could not load API usage.");
+    } finally {
+      setUsageLoading(false);
     }
   }
 
@@ -146,7 +181,6 @@ export default function AdminPage() {
         const end = textarea.selectionEnd ?? selected.content.length;
         const newContent = selected.content.slice(0, start) + markdown + selected.content.slice(end);
         setSelected({ ...selected, content: newContent });
-        // Restore focus/cursor after the inserted image, on next tick
         requestAnimationFrame(() => {
           textarea.focus();
           const pos = start + markdown.length;
@@ -256,6 +290,7 @@ export default function AdminPage() {
       }
       setGenerateMsg(msg);
       await loadPosts();
+      if (showUsage) await loadUsage();
     } catch (e) {
       setError("Could not generate. Check your Gemini API key is set correctly.");
     } finally {
@@ -435,6 +470,9 @@ export default function AdminPage() {
     );
   }
 
+  const totalPages = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
+  const pagedPosts = posts.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 10, flexWrap: "wrap" }}>
@@ -470,12 +508,68 @@ export default function AdminPage() {
           {generating ? "Generating…" : "Generate Now (AI)"}
         </button>
         <button
+          onClick={loadUsage}
+          disabled={usageLoading}
+          style={{ fontSize: 13, cursor: "pointer", padding: "6px 12px" }}
+        >
+          {usageLoading ? "Checking…" : "API Usage"}
+        </button>
+        <button
           onClick={loadPosts}
           style={{ fontSize: 13, cursor: "pointer", padding: "6px 12px" }}
         >
           Refresh
         </button>
       </div>
+
+      {showUsage && usage && (
+        <div
+          style={{
+            border: "1px solid #e6e6e6",
+            borderRadius: 6,
+            padding: "16px 18px",
+            marginBottom: 20,
+            fontSize: 13,
+            background: "#fafafa",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <strong>Gemini API usage — today</strong>
+            <button
+              onClick={() => setShowUsage(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#6b6b6b", fontSize: 12 }}
+            >
+              Hide
+            </button>
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <strong>{usage.requestsToday}</strong> / ~{FREE_DAILY_REQUEST_LIMIT} free requests used today
+            {" "}({usage.successToday} succeeded, {usage.failedToday} failed)
+          </div>
+          <div style={{ color: "#6b6b6b", marginBottom: 12 }}>
+            Tokens today: {usage.totalTokensToday.toLocaleString()} total
+            {" "}({usage.promptTokensToday.toLocaleString()} prompt + {usage.candidatesTokensToday.toLocaleString()} output)
+          </div>
+          {usage.recent.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, color: "#999", marginBottom: 6, textTransform: "uppercase" }}>
+                Recent calls
+              </div>
+              {usage.recent.map((r, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderTop: i > 0 ? "1px solid #ececec" : "none" }}>
+                  <span style={{ color: r.success ? "#1e7d3c" : "#c0392b" }}>
+                    {r.success ? "✓ success" : `✗ ${r.errorType ?? "failed"}`}
+                  </span>
+                  <span style={{ color: "#999" }}>
+                    {r.success ? `${r.totalTokens.toLocaleString()} tokens` : ""} ·{" "}
+                    {new Date(r.createdAt).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {generateMsg && <p style={{ color: "#1e7d3c", fontSize: 13, marginBottom: 12 }}>{generateMsg}</p>}
 
@@ -486,7 +580,7 @@ export default function AdminPage() {
       )}
 
       <div>
-        {posts.map((post) => (
+        {pagedPosts.map((post) => (
           <div
             key={post.id}
             onClick={() => openExisting(post)}
@@ -523,6 +617,28 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      {posts.length > PAGE_SIZE && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 24 }}>
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            style={{ padding: "8px 16px", cursor: page === 0 ? "default" : "pointer", opacity: page === 0 ? 0.4 : 1 }}
+          >
+            ← Previous
+          </button>
+          <span style={{ fontSize: 13, color: "#6b6b6b" }}>
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            style={{ padding: "8px 16px", cursor: page >= totalPages - 1 ? "default" : "pointer", opacity: page >= totalPages - 1 ? 0.4 : 1 }}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

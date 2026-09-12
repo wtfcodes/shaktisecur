@@ -8,6 +8,19 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// Logs every Gemini API call (success or failure) so actual usage against
+// the free daily quota can be seen in the admin panel instead of guessing.
+model ApiUsage {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  model            String
+  success          Boolean
+  promptTokens     Int      @default(0)
+  candidatesTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  errorType        String?
+}
+
 // Every AI-generated draft lands here as "draft" first.
 // You (or an editor) review + tweak before flipping to "published".
 // This human-in-the-loop step matters for AdSense approval —

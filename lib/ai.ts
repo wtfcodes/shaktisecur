@@ -7,6 +7,17 @@ export type GeneratedPost = {
   tags: string[];
 };
 
+export type GenerationUsage = {
+  promptTokens: number;
+  candidatesTokens: number;
+  totalTokens: number;
+};
+
+export type GenerationResult = {
+  post: GeneratedPost;
+  usage: GenerationUsage;
+};
+
 const SYSTEM_PROMPT = `You are a technology journalist writing for a daily tech-news blog covering
 genuinely trending, high-interest stories in technology, AI, software, and cybersecurity.
 
@@ -48,7 +59,9 @@ const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL
 // (they'll all fail the same way until the quota window resets).
 export class QuotaExceededError extends Error {}
 
-export async function generateArticleFromNews(item: NewsItem): Promise<GeneratedPost> {
+export const MODEL_NAME = MODEL;
+
+export async function generateArticleFromNews(item: NewsItem): Promise<GenerationResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set in environment variables");
@@ -98,6 +111,12 @@ Write the original, long-form article now (1200-1800 words).`;
 
   const data = await res.json();
 
+  const usage: GenerationUsage = {
+    promptTokens: data.usageMetadata?.promptTokenCount ?? 0,
+    candidatesTokens: data.usageMetadata?.candidatesTokenCount ?? 0,
+    totalTokens: data.usageMetadata?.totalTokenCount ?? 0,
+  };
+
   const candidate = data.candidates?.[0];
   if (!candidate) {
     throw new Error(`Gemini returned no candidates. Full response: ${JSON.stringify(data).slice(0, 500)}`);
@@ -130,5 +149,5 @@ Write the original, long-form article now (1200-1800 words).`;
     throw new Error(`Gemini response missing required fields: ${JSON.stringify(parsed).slice(0, 300)}`);
   }
 
-  return parsed;
+  return { post: parsed, usage };
 }
