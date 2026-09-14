@@ -92,6 +92,20 @@ Write the original, long-form article now (1200-1800 words).`;
       ],
       generationConfig: {
         responseMimeType: "application/json",
+        // Forces the model into constrained/structured generation matching
+        // this exact shape — this is what actually fixes malformed JSON
+        // (stray unescaped quotes, raw newlines, etc.) at the source, rather
+        // than trying to repair broken text after the fact.
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            title: { type: "STRING" },
+            excerpt: { type: "STRING" },
+            content: { type: "STRING" },
+            tags: { type: "ARRAY", items: { type: "STRING" } },
+          },
+          required: ["title", "excerpt", "content", "tags"],
+        },
         maxOutputTokens: 16384,
         // gemini-3.x models use "thinkingLevel" (not the older "thinkingBudget"
         // field from Gemini 2.5) — sending the wrong field name causes a 400
