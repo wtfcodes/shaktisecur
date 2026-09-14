@@ -44,7 +44,10 @@ Respond ONLY with valid JSON, no markdown fences, in this exact shape:
   "excerpt": "string, 1-2 sentences, under 160 characters",
   "content": "string, full LONG article body in markdown, with multiple ## subheadings",
   "tags": ["category tag first (from the list above), then 2-4 more specific tags"]
-}`;
+}
+IMPORTANT: inside the "content" string, every line break MUST be written as the
+two characters \\n (backslash-n) — never a raw/literal newline — or the JSON will
+be invalid.`;
 
 // Calling the Gemini REST API directly (instead of the @google/generative-ai
 // SDK) avoids SDK-version/model-name mismatches — this always talks to
@@ -142,7 +145,14 @@ Write the original, long-form article now (1200-1800 words).`;
   try {
     parsed = JSON.parse(cleaned);
   } catch (e) {
-    throw new Error(`Could not parse Gemini's JSON response: ${cleaned.slice(0, 300)}`);
+    // Long articles occasionally come back with raw (unescaped) newlines
+    // inside a JSON string value, which breaks JSON.parse even though the
+    // response itself is complete. Repair those before giving up.
+    try {
+      parsed = JSON.parse(escapeRawNewlinesInStrings(cleaned));
+    } catch (e2) {
+      throw new Error(`Could not parse Gemini's JSON response: ${cleaned.slice(0, 300)}`);
+    }
   }
 
   if (!parsed.title || !parsed.content) {
@@ -150,4 +160,53 @@ Write the original, long-form article now (1200-1800 words).`;
   }
 
   return { post: parsed, usage };
+}
+
+// Walks the raw text tracking whether we're inside a JSON string literal,
+// and escapes any literal newline/carriage-return/tab characters found
+// there (which are illegal inside a JSON string but sometimes slip through
+// from the model's output on long multi-paragraph content).
+function escapeRawNewlinesInStrings(raw: string): string {
+  let result = "";
+  let inString = false;
+  let escapedNext = false;
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+
+    if (escapedNext) {
+      result += ch;
+      escapedNext = false;
+      continue;
+    }
+
+    if (ch === "\\") {
+      result += ch;
+      escapedNext = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      result += ch;
+      continue;
+    }
+
+    if (inString && ch === "\n") {
+      result += "\\n";
+      continue;
+    }
+    if (inString && ch === "\r") {
+      result += "\\r";
+      continue;
+    }
+    if (inString && ch === "\t") {
+      result += "\\t";
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
 }
